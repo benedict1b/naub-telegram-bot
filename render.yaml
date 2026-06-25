@@ -9,6 +9,6 @@ services:
     startCommand: python bot.py
     envVars:
       - key: TELEGRAM_TOKEN
-        value: 8838484337:AAEvN51Zw-zq-bf9rRt_Sj5GpwIf-EqiZws
+        sync: false
       - key: GROQ_API_KEY
-        value: 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
+        sync: false
