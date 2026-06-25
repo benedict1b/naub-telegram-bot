@@ -1,11 +1,14 @@
 services:
-  - type: web
+  - type: worker
     name: naub-telegram-bot
     env: python
-    buildCommand: pip install -r requirements.txt
+    region: frankfurt
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -r requirements.txt
     startCommand: python bot.py
     envVars:
       - key: TELEGRAM_TOKEN
-        sync: false
+        value: 8838484337:AAEvN51Zw-zq-bf9rRt_Sj5GpwIf-EqiZws
       - key: GROQ_API_KEY
-        sync: false
+        value: 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
