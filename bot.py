@@ -3,25 +3,20 @@ import requests
 import json
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-from dotenv import load_dotenv
 
 # =============================================
-# CONFIGURATION - Load from .env file
+# Get environment variables directly (no dotenv)
 # =============================================
-
-load_dotenv()
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
-# Check if secrets are set
 if not TELEGRAM_TOKEN or not GROQ_API_KEY:
     print("❌ ERROR: Missing environment variables!")
-    print("Make sure .env file exists with TELEGRAM_TOKEN and GROQ_API_KEY")
     exit(1)
 
-print("✅ Environment variables loaded successfully!")
+print("✅ Environment variables loaded!")
 
 # =============================================
 # GROQ API CALL
@@ -173,12 +168,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def main():
     print("🤖 NAUB AI Telegram Bot Starting...")
     
-    # Create application with increased timeout
+    # Create application with timeout settings
     application = (
         Application.builder()
         .token(TELEGRAM_TOKEN)
-        .connect_timeout(30.0)   # Increase connection timeout
-        .read_timeout(30.0)      # Increase read timeout
+        .connect_timeout(30.0)
+        .read_timeout(30.0)
         .build()
     )
     
@@ -188,7 +183,7 @@ def main():
     application.add_handler(CommandHandler("about", about))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
-    # Start bot with reduced poll interval
+    # Start bot
     print("✅ Bot is running! Press Ctrl+C to stop.")
     application.run_polling(poll_interval=1.0)
 
