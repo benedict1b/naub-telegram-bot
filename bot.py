@@ -1,41 +1,58 @@
 import os
-import requests
+import aiohttp
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
-TOKEN = os.getenv("TELEGRAM_TOKEN")
-GROQ_KEY = os.getenv("GROQ_API_KEY")
+# Try multiple possible key names
+TOKEN = os.getenv("TELEGRAM_TOKEN") or os.getenv("BOT_TOKEN") or os.getenv("TOKEN")
+GROQ_KEY = os.getenv("GROQ_API_KEY") or os.getenv("GROQ_KEY")
 
 if not TOKEN:
-    print("❌ No token!")
+    print("❌ No Telegram token found!")
     exit(1)
 
-print("✅ Starting bot...")
+if not GROQ_KEY:
+    print("❌ No Groq API key found!")
+    exit(1)
+
+print("✅ Bot starting...")
+
+async def get_ai_response(message: str) -> str:
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {GROQ_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "llama-3.1-8b-instant",
+                    "messages": [{"role": "user", "content": message}],
+                    "temperature": 0.7,
+                    "max_tokens": 800
+                },
+                timeout=30
+            ) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    return data['choices'][0]['message']['content']
+                return f"⚠️ Error: {resp.status}"
+    except Exception as e:
+        return f"⚠️ Error: {str(e)}"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🎓 Welcome to NAUB AI! Type a question.")
+    await update.message.reply_text("🎓 Welcome to NAUB AI Assistant! Ask me anything about NAUB.")
 
 async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        headers = {"Authorization": f"Bearer {GROQ_KEY}", "Content-Type": "application/json"}
-        data = {
-            "model": "llama-3.1-8b-instant",
-            "messages": [{"role": "user", "content": update.message.text}]
-        }
-        r = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=data)
-        if r.status_code == 200:
-            reply = r.json()['choices'][0]['message']['content']
-        else:
-            reply = f"⚠️ Error: {r.status_code}"
-    except Exception as e:
-        reply = f"⚠️ Error: {str(e)}"
-    await update.message.reply_text(reply)
+    response = await get_ai_response(update.message.text)
+    await update.message.reply_text(response)
 
 def main():
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT, handle))
-    print("✅ Bot running!")
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle))
+    print("✅ Bot is running!")
     app.run_polling()
 
 if __name__ == "__main__":
